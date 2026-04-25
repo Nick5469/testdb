@@ -1,0 +1,50 @@
+[
+    {
+        "id": "5354093196",
+        "uid": "646946",
+        "paperid": "15128400",
+        "chapter": "35520362",
+        "difficulty": "2",
+        "difficulty_score": "0.00",
+        "parentid": "0",
+        "path": "",
+        "ptype": "4",
+        "question": "\u4e0b\u5217\u5173\u4e8eEthernet\u7269\u7406\u5c42\u6807\u51c6\u547d\u540d\u65b9\u6cd5(x Type-y Name)\u7684\u63cf\u8ff0\u4e2d\uff0c\u9519\u8bef\u7684\u662f\uff08      \uff09\u3002",
+        "qtype": "1",
+        "type_name": "",
+        "number": "",
+        "options": "[{\"Key\":\"A\",\"Value\":\"x\\u8868\\u793a\\u4ee5Mbps\\u4e3a\\u5355\\u4f4d\\u7684\\u4f20\\u8f93\\u901f\\u7387\"},{\"Key\":\"B\",\"Value\":\"Type\\u8868\\u793a\\u6570\\u636e\\u4f20\\u8f93\\u65b9\\u5f0f\\u662f\\u57fa\\u5e26\\u8fd8\\u662f\\u9891\\u5e26\"},{\"Key\":\"C\",\"Value\":\"y\\u8868\\u793a\\u4ee5\\u7c73\\u4e3a\\u5355\\u4f4d\\u7684\\u7f51\\u6bb5\\u6700\\u5927\\u957f\\u5ea6\"},{\"Key\":\"D\",\"Value\":\"IEEE 802.3 10Base-5\\u91c7\\u7528\\u57fa\\u5e26\\u4f20\\u8f93\"}]",
+        "answer": "C",
+        "analysis": "y\u8868\u793a\u7f51\u6bb5\u7684\u6700\u5927\u957f\u5ea6\uff0c\u5355\u4f4d\u4e3a100m\u3002\u56e0\u6b64C\u9009\u9879\u9519\u8bef\uff0c\u6545\u9009C\u9009\u9879\u3002",
+        "hash": "2f46eba669d1985bbf7a44fa406c591b62e8d014",
+        "question_context_id": "",
+        "question_images": "",
+        "answer_images": "",
+        "extra": "",
+        "status": "0",
+        "is_show": "1",
+        "editor": "",
+        "created_at": "2025-07-14 08:55:12",
+        "updated_at": "2025-07-14 09:30:34",
+        "note": "",
+        "note_is_public": "1",
+        "note_id": "0",
+        "self_analysis": "",
+        "ai_analysis": "Ethernet\u7269\u7406\u5c42\u6807\u51c6x Type-y Name\u4e2d\uff0cx\u4e3a\u4f20\u8f93\u901f\u7387(Mbps)\uff0cType\u6307\u57fa\u5e26\u6216\u9891\u5e26\uff0cy\u662f\u7f16\u7801\u65b9\u5f0f\u800c\u975e\u7f51\u6bb5\u957f\u5ea6\u300210Base-5\u7684\u201cBase\u201d\u8868\u57fa\u5e26\u4f20\u8f93\u3002C\u5c06y\u8bef\u89e3\u4e3a\u957f\u5ea6\uff0c\u9519\u8bef\u3002",
+        "ai_analysis_like": "-1",
+        "point": null,
+        "chapters": [
+            {
+                "id": "35520352",
+                "title": "\u7b2c\u4e94\u7ae0 \u5c40\u57df\u7f51\u6280\u672f\u57fa\u7840\u53ca\u5e94\u7528"
+            },
+            {
+                "id": "35520362",
+                "title": "5.1 \u5c40\u57df\u7f51"
+            }
+        ],
+        "all_right": "1408",
+        "all_wrong": "624",
+        "all_accuracy": "0.6929"
+    }
+]
