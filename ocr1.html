@@ -2,373 +2,459 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>我的界面 - 响应式示例</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI 智能物品识别 - 拍照识物</title>
+    <!-- TensorFlow.js 核心库和 MobileNet 模型适配器 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            user-select: none; /* 避免移动端长按菜单 */
         }
 
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f5f7fb;
+            background: linear-gradient(145deg, #0a2f3a 0%, #0a1a1f 100%);
             min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            padding: 16px;
+        }
+
+        /* 主卡片 */
+        .container {
+            max-width: 550px;
+            width: 100%;
+            background: rgba(22, 34, 38, 0.75);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            padding: 20px 20px 30px;
+            transition: all 0.2s ease;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-align: center;
+            color: #f0f9ff;
+            letter-spacing: -0.3px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            gap: 10px;
         }
 
-        /* 背景图片（整个页面背景） */
-        .page-bg {
-            position: fixed;
+        h1 span {
+            background: #ffb347;
+            font-size: 1rem;
+            padding: 4px 10px;
+            border-radius: 60px;
+            color: #1e2a2e;
+            font-weight: 500;
+        }
+
+        .sub {
+            text-align: center;
+            color: #9bb7c2;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+            border-bottom: 1px dashed #2e4a55;
+            display: inline-block;
+            width: auto;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 6px;
+        }
+
+        /* 相机预览区 */
+        .camera-wrapper {
+            background: #000000;
+            border-radius: 36px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4 / 3;
+            margin-bottom: 20px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 220, 150, 0.5);
+        }
+
+        video, canvas {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://picsum.photos/id/104/1920/1080'); /* 示例背景图，可替换 */
-            background-size: cover;
-            background-position: center;
-            filter: brightness(0.7);
-            z-index: -1;
-        }
-
-        /* 主卡片 - 响应式宽度 */
-        .profile-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(2px);
-            border-radius: 32px;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            width: 100%;
-            max-width: 500px;   /* PC上限制最大宽度，居中卡片效果 */
-            transition: all 0.2s ease;
-        }
-
-        /* 手机端：更贴近边缘，减少留白 */
-        @media (max-width: 640px) {
-            body {
-                padding: 12px;
-            }
-            .profile-card {
-                border-radius: 24px;
-                max-width: 100%;
-            }
-        }
-
-        /* 头部区域：带背景图覆盖区（也可以独立背景） */
-        .profile-header {
-            background-image: url('https://picsum.photos/id/15/800/300');
-            background-size: cover;
-            background-position: center 30%;
-            padding: 40px 20px 30px 20px;
-            text-align: center;
-            position: relative;
-        }
-
-        /* 头像 */
-        .avatar {
-            width: 90px;
-            height: 90px;
-            background: #fff;
-            border-radius: 50%;
-            margin: 0 auto 12px;
-            overflow: hidden;
-            border: 3px solid white;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-        }
-        .avatar img {
-            width: 100%;
-            height: 100%;
             object-fit: cover;
+        }
+
+        canvas {
+            display: none;  /* 隐藏canvas，仅用于截图处理 */
+        }
+
+        #videoElement {
             display: block;
         }
 
-        .user-name {
-            font-size: 1.6rem;
-            font-weight: 600;
-            color: white;
-            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
-            margin-bottom: 6px;
-        }
-
-        .user-bio {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.9);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-
-        /* 菜单列表 */
-        .menu-list {
-            padding: 16px 20px 24px 20px;
+        /* 控制栏 */
+        .controls {
             display: flex;
-            flex-direction: column;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #1e3b42;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 12px 26px;
+            border-radius: 60px;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,215,140,0.4);
+        }
+
+        button:active {
+            transform: scale(0.96);
+            background: #0f2c32;
+        }
+
+        .btn-primary {
+            background: #ff8c42;
+            color: #1e2a2e;
+            box-shadow: 0 6px 14px rgba(255,140,66,0.3);
+        }
+
+        .btn-primary:active {
+            background: #e67e2e;
+        }
+
+        /* 识别结果卡片 */
+        .result-card {
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 200, 120, 0.4);
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #ffcd94;
+            margin-bottom: 8px;
+        }
+
+        #resultText {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #ffffff;
+            word-break: break-word;
+            line-height: 1.3;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
             gap: 12px;
         }
 
-        /* 通用菜单项样式（适配手指/鼠标） */
-        .menu-item {
-            background: white;
-            border-radius: 20px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-            border: 1px solid #f0f0f0;
-        }
-        .menu-item:hover {
-            background: #fef9e6;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-        }
-        /* 手机端点击反馈 */
-        .menu-item:active {
-            transform: scale(0.98);
-            background: #f0f0f0;
+        .confidence {
+            font-size: 1rem;
+            background: #2b5545;
+            padding: 4px 12px;
+            border-radius: 60px;
+            font-weight: normal;
+            color: #e6ffed;
         }
 
-        .menu-left {
-            display: flex;
+        .loading {
+            display: inline-flex;
             align-items: center;
-            gap: 14px;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #1f2937;
-        }
-        .menu-icon {
-            font-size: 1.5rem;
-        }
-        .arrow {
-            color: #9ca3af;
-            font-size: 1.2rem;
-            transition: transform 0.2s;
-        }
-
-        /* 折叠面板专用区域 */
-        .collapse-wrapper {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid #f0f0f0;
-        }
-        .collapse-header {
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            background: white;
-            transition: background 0.2s;
-            user-select: none;
-        }
-        .collapse-header:hover {
-            background: #fafafa;
-        }
-        .collapse-header:active {
-            background: #f0f0f0;
-        }
-        .collapse-title {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            font-weight: 500;
-            font-size: 1rem;
-            color: #1f2937;
-        }
-        .collapse-icon {
-            font-size: 1.5rem;
-        }
-        .collapse-arrow {
-            transition: transform 0.3s ease;
-            font-size: 1.2rem;
-            color: #9ca3af;
-        }
-        .collapse-arrow.open {
-            transform: rotate(180deg);
-        }
-        .collapse-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.33, 1, 0.68, 1);
-            background: #f9fafb;
-            border-top: 1px solid transparent;
-        }
-        .collapse-content.show {
-            max-height: 300px;   /* 根据内容调整，或改用auto但transition不支持auto，因此给足够大值 */
-            border-top-color: #eee;
-        }
-        .about-text {
-            padding: 20px;
-            color: #4b5563;
-            line-height: 1.5;
+            gap: 10px;
+            background: #2d4e45;
+            padding: 6px 16px;
+            border-radius: 40px;
             font-size: 0.9rem;
         }
 
-        hr {
-            margin: 4px 0;
-            border: none;
-            border-top: 1px solid #edf2f7;
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,240,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
         }
 
-        /* 跳转示例提示(仅示意) */
-        .toast-msg {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 18px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            pointer-events: none;
-            z-index: 999;
-            backdrop-filter: blur(8px);
-            transition: opacity 0.2s;
-            opacity: 0;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #7c9ba8;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 16px 16px 24px;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+            #resultText {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="page-bg"></div>
-
-<div class="profile-card">
-    <!-- 头部：头像 + 名称 + 背景图片（背景图片在 .profile-header 中） -->
-    <div class="profile-header">
-        <div class="avatar">
-            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="头像">
-        </div>
-        <div class="user-name">林晓彤</div>
-        <div class="user-bio">保持热爱，奔赴山海</div>
+<div class="container">
+    <h1>
+        📸 智感识物
+        <span>AI 离线版</span>
+    </h1>
+    <div style="text-align: center;">
+        <div class="sub">纯前端 · 手机对准物品 · 即时识别</div>
     </div>
 
-    <div class="menu-list">
-        <!-- 第一个 xx配置：跳转新页面 -->
-        <div class="menu-item" id="jumpConfig1">
-            <div class="menu-left">
-                <span class="menu-icon">⚙️</span>
-                <span>账号配置</span>
-            </div>
-            <span class="arrow">➡️</span>
-        </div>
+    <!-- 摄像头预览区 -->
+    <div class="camera-wrapper">
+        <video id="videoElement" autoplay playsinline muted></video>
+        <canvas id="canvasElement"></canvas>
+    </div>
 
-        <!-- 第二个 xx配置：跳转新页面 (另一个配置) -->
-        <div class="menu-item" id="jumpConfig2">
-            <div class="menu-left">
-                <span class="menu-icon">🎨</span>
-                <span>主题配置</span>
-            </div>
-            <span class="arrow">➡️</span>
-        </div>
+    <div class="controls">
+        <button id="captureBtn" class="btn-primary">
+            📷 拍照识别
+        </button>
+        <button id="restartCamBtn">
+            🔄 重启摄像头
+        </button>
+    </div>
 
-        <!-- 关于信息：折叠面板 -->
-        <div class="collapse-wrapper">
-            <div class="collapse-header" id="collapseHeader">
-                <div class="collapse-title">
-                    <span class="collapse-icon">📄</span>
-                    <span>关于信息</span>
-                </div>
-                <span class="collapse-arrow" id="collapseArrow">▼</span>
-            </div>
-            <div class="collapse-content" id="collapseContent">
-                <div class="about-text">
-                    <strong>版本：</strong> 2.0.1<br>
-                    <strong>开发者：</strong> 响应式设计团队<br>
-                    <strong>功能介绍：</strong> 本界面同时适配PC和手机端，折叠面板使用纯JS实现，点击展开/收起关于应用的详细介绍。<br>
-                    <hr>
-                    📱 手机端：卡片占满宽度，触控区域加大<br>
-                    🖥️ PC端：居中卡片风格，支持悬浮效果<br>
-                    ✨ 背景图片覆盖全屏，头部头像组合清晰。
-                </div>
-            </div>
+    <div class="result-card">
+        <div class="result-label">🔍 识别结果</div>
+        <div id="resultText">
+            <span>等待拍照...</span>
+        </div>
+        <div class="footer-note">
+            💡 提示：请将物品放在光线充足处，点击拍照识别。<br>
+            🧠 模型基于 MobileNet，可识别上千种常见物体。
         </div>
     </div>
 </div>
 
-<div id="toastMsg" class="toast-msg">提示</div>
-
 <script>
-    (function() {
-        // ----- 跳转新页面功能（模拟真实跳转，演示可替换实际URL）-----
-        const config1 = document.getElementById('jumpConfig1');
-        const config2 = document.getElementById('jumpConfig2');
+    // 全局变量
+    let mobilenetModel = null;      // 存储模型
+    let currentStream = null;       // 摄像头流
+    const video = document.getElementById('videoElement');
+    const canvas = document.getElementById('canvasElement');
+    const captureBtn = document.getElementById('captureBtn');
+    const restartCamBtn = document.getElementById('restartCamBtn');
+    const resultDiv = document.getElementById('resultText');
 
-        // 真实场景中改为你的目标页面地址
-        const PAGE_URL_1 = 'https://www.example.com/settings/account';   // 示例，不会真的跳转，因为example.com存在，但为了演示不跳恶意网站，弹出提示框演示
-        const PAGE_URL_2 = 'https://www.example.com/settings/theme';
-
-        function handleJump(url, name) {
-            // PC/手机通用的跳转方式：_blank 在新标签页打开（或者当前页）
-            // 由于示例链接无法保证访问，但展示行为，正式替换即可
-            if (url && url.startsWith('http')) {
-                window.open(url, '_blank');
-            } else {
-                // 本地测试提醒
-                showToast(`即将跳转至 ${name} 页面(正式链接可替换)`);
-                // 模拟: 延迟跳转展示效果（开发时可注释）
-                setTimeout(() => {
-                    // window.location.href = url;  生产环境打开
-                    console.log(`跳转: ${url}`);
-                }, 300);
-            }
+    // 辅助函数：显示加载状态
+    function setLoadingState(isLoading, customMsg = null) {
+        if (isLoading) {
+            resultDiv.innerHTML = `<div class="loading"><div class="spinner"></div> 🧠 模型分析中...</div>`;
+        } else if (customMsg) {
+            resultDiv.innerHTML = `<span>${customMsg}</span>`;
         }
+    }
 
-        config1.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleJump(PAGE_URL_1, '账号配置');
-        });
-
-        config2.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleJump(PAGE_URL_2, '主题配置');
-        });
-
-        // ----- 折叠面板（关于信息）-----
-        const collapseHeader = document.getElementById('collapseHeader');
-        const collapseContent = document.getElementById('collapseContent');
-        const collapseArrow = document.getElementById('collapseArrow');
-        let isOpen = false;   // 初始关闭
-
-        function toggleCollapse() {
-            if (isOpen) {
-                // 关闭
-                collapseContent.classList.remove('show');
-                collapseArrow.classList.remove('open');
-                // 可选: 平滑通过移除max-height
-            } else {
-                // 打开
-                collapseContent.classList.add('show');
-                collapseArrow.classList.add('open');
-            }
-            isOpen = !isOpen;
+    // 初始化摄像头
+    async function initCamera() {
+        // 关闭之前的流
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
+        
+        try {
+            // 适配移动端: 使用后置摄像头环境，优先 facingMode: environment
+            const constraints = {
+                video: {
+                    facingMode: { exact: "environment" }, // 后置摄像头
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+            
+            // 如果不支持强制后置，就降级为普通后置或默认
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (err) {
+                console.warn("无法获取后置摄像头，尝试默认摄像头:", err);
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            }
+            
+            currentStream = stream;
+            video.srcObject = stream;
+            await video.play();
+            return true;
+        } catch (error) {
+            console.error("摄像头错误:", error);
+            resultDiv.innerHTML = `<span>❌ 无法访问摄像头，请确保已授予权限并处于 HTTPS 环境</span>`;
+            return false;
+        }
+    }
 
-        collapseHeader.addEventListener('click', toggleCollapse);
-        // 确保起始状态是关闭的（类已移除）
-        collapseContent.classList.remove('show');
-        collapseArrow.classList.remove('open');
-        isOpen = false;
-
-        // 小提示显示函数
-        function showToast(msg) {
-            const toast = document.getElementById('toastMsg');
-            toast.textContent = msg;
-            toast.style.opacity = '1';
+    // 加载 MobileNet 模型（只需要加载一次）
+    async function loadModel() {
+        if (mobilenetModel) return mobilenetModel;
+        setLoadingState(true, '加载AI模型中...');
+        try {
+            // 注意：mobilenet.load() 会从 cdn 拉取约 20MB 权重文件，首次稍慢
+            const model = await mobilenet.load({
+                version: 2,
+                alpha: 1.0
+            });
+            mobilenetModel = model;
+            setLoadingState(false, '✅ 模型就绪，可以对准物品拍照啦！');
             setTimeout(() => {
-                toast.style.opacity = '0';
-            }, 1800);
+                if (resultDiv.innerText.includes('模型就绪')) {
+                    resultDiv.innerHTML = `<span>📸 点击拍照识别物品</span>`;
+                }
+            }, 2000);
+            return model;
+        } catch (err) {
+            console.error("模型加载失败:", err);
+            setLoadingState(false, '⚠️ 模型加载失败，请刷新页面重试');
+            return null;
         }
+    }
 
-        // 可选：如果是演示跳转示例URL友好提醒一下，因为当前example.com真实可访问但无实际意义
-        // 在PC端和手机端resize时无额外操作，但保留响应式设计
-        console.log('响应式个人中心已加载，支持PC/手机');
+    // 核心：截取视频当前帧，识别物品
+    async function recognizeFromVideo() {
+        if (!mobilenetModel) {
+            resultDiv.innerHTML = `<span>⏳ 模型尚未加载，请稍后再拍...</span>`;
+            // 尝试重新加载
+            await loadModel();
+            if (!mobilenetModel) return;
+        }
+        
+        if (!video.videoWidth || video.paused || video.ended) {
+            resultDiv.innerHTML = `<span>📹 摄像头未就绪，请稍等或重启摄像头</span>`;
+            return;
+        }
+        
+        // 显示识别中状态
+        setLoadingState(true);
+        
+        try {
+            // 1. 将视频当前帧绘制到 canvas 并截图
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 2. 将 canvas 转为图片元素 或者直接传入HTMLImageElement
+            const img = new Image(canvas.width, canvas.height);
+            img.src = canvas.toDataURL('image/jpeg', 0.85);  // 转为 dataURL
+            
+            // 等待图片加载完成
+            await new Promise((resolve) => {
+                if (img.complete) resolve();
+                else img.onload = resolve;
+            });
+            
+            // 3. 调用 MobileNet 进行分类
+            const predictions = await mobilenetModel.classify(img);
+            
+            if (predictions && predictions.length > 0) {
+                const topPrediction = predictions[0];
+                const className = topPrediction.className;      // 物品名称（英文居多但直观）
+                const confidence = (topPrediction.probability * 100).toFixed(1);
+                
+                // 美化显示: 有的结果带英文下划线，可简单处理成更友好的文本（可选）
+                let displayName = className;
+                // 将常见的下划线或首字母大写转义 
+                displayName = displayName.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+                
+                resultDiv.innerHTML = `
+                    <span>✨ ${displayName}</span>
+                    <span class="confidence">可信度 ${confidence}%</span>
+                `;
+            } else {
+                resultDiv.innerHTML = `<span>🤔 未识别出明确物体，尝试换个角度或光线</span>`;
+            }
+        } catch (error) {
+            console.error("识别错误:", error);
+            resultDiv.innerHTML = `<span>⚠️ 识别出错，请重试或刷新页面</span>`;
+        } finally {
+            // 清除loading标记, 但如果里面已经是正常内容, 无需额外改变
+            // 但注意 setLoadingState 改写了 html，如果识别成功已经覆盖，不能再次覆盖。
+            // 为了避免冲突，这里不重置了，但识别失败时确保没卡loading:
+            if (resultDiv.innerHTML.includes("分析中")) {
+                resultDiv.innerHTML = `<span>😵 识别失败，请重新拍照</span>`;
+            }
+        }
+    }
+
+    // 重启摄像头（切换或恢复流）
+    async function restartCamera() {
+        setLoadingState(true, "🔄 正在重启摄像头...");
+        await initCamera();
+        setLoadingState(false, "📸 摄像头已重置，可继续拍照");
+        setTimeout(() => {
+            if (resultDiv.innerText.includes("摄像头已重置")) {
+                resultDiv.innerHTML = `<span>📸 点击拍照识别物品</span>`;
+            }
+        }, 1800);
+    }
+
+    // 监听拍照按钮
+    captureBtn.addEventListener('click', () => {
+        // 如果模型还没加载好，先尝试加载再进行识别
+        if (!mobilenetModel) {
+            loadModel().then(() => {
+                recognizeFromVideo();
+            });
+        } else {
+            recognizeFromVideo();
+        }
+    });
+
+    restartCamBtn.addEventListener('click', () => {
+        restartCamera();
+    });
+
+    // 页面启动流程
+    (async function bootstrap() {
+        // 1. 开启摄像头
+        const camOk = await initCamera();
+        if (!camOk) {
+            resultDiv.innerHTML = `<span>⚠️ 无法获取摄像头权限，请检查设置并刷新页面</span>`;
+            return;
+        }
+        // 2. 后台加载模型（不阻塞UI, 显示loading）
+        await loadModel();
+        // 额外检测一下移动端需要用户手势才能播放某些浏览器，但通常 autoplay 加上 muted 无碍
+        video.onloadedmetadata = () => {
+            console.log("视频流已准备好");
+        };
     })();
 </script>
 </body>
