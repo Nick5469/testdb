@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>我的界面 - 响应式示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* 背景图片（整个页面背景） */
+        .page-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://picsum.photos/id/104/1920/1080'); /* 示例背景图，可替换 */
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.7);
+            z-index: -1;
+        }
+
+        /* 主卡片 - 响应式宽度 */
+        .profile-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(2px);
+            border-radius: 32px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;   /* PC上限制最大宽度，居中卡片效果 */
+            transition: all 0.2s ease;
+        }
+
+        /* 手机端：更贴近边缘，减少留白 */
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+            .profile-card {
+                border-radius: 24px;
+                max-width: 100%;
+            }
+        }
+
+        /* 头部区域：带背景图覆盖区（也可以独立背景） */
+        .profile-header {
+            background-image: url('https://picsum.photos/id/15/800/300');
+            background-size: cover;
+            background-position: center 30%;
+            padding: 40px 20px 30px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* 头像 */
+        .avatar {
+            width: 90px;
+            height: 90px;
+            background: #fff;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            overflow: hidden;
+            border: 3px solid white;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .user-name {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            margin-bottom: 6px;
+        }
+
+        .user-bio {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* 菜单列表 */
+        .menu-list {
+            padding: 16px 20px 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 通用菜单项样式（适配手指/鼠标） */
+        .menu-item {
+            background: white;
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f0f0;
+        }
+        .menu-item:hover {
+            background: #fef9e6;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+        }
+        /* 手机端点击反馈 */
+        .menu-item:active {
+            transform: scale(0.98);
+            background: #f0f0f0;
+        }
+
+        .menu-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .menu-icon {
+            font-size: 1.5rem;
+        }
+        .arrow {
+            color: #9ca3af;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        /* 折叠面板专用区域 */
+        .collapse-wrapper {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+        }
+        .collapse-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            background: white;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        .collapse-header:hover {
+            background: #fafafa;
+        }
+        .collapse-header:active {
+            background: #f0f0f0;
+        }
+        .collapse-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-weight: 500;
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        .collapse-icon {
+            font-size: 1.5rem;
+        }
+        .collapse-arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+            color: #9ca3af;
+        }
+        .collapse-arrow.open {
+            transform: rotate(180deg);
+        }
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+            background: #f9fafb;
+            border-top: 1px solid transparent;
+        }
+        .collapse-content.show {
+            max-height: 300px;   /* 根据内容调整，或改用auto但transition不支持auto，因此给足够大值 */
+            border-top-color: #eee;
+        }
+        .about-text {
+            padding: 20px;
+            color: #4b5563;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        hr {
+            margin: 4px 0;
+            border: none;
+            border-top: 1px solid #edf2f7;
+        }
+
+        /* 跳转示例提示(仅示意) */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 999;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.2s;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-bg"></div>
+
+<div class="profile-card">
+    <!-- 头部：头像 + 名称 + 背景图片（背景图片在 .profile-header 中） -->
+    <div class="profile-header">
+        <div class="avatar">
+            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="头像">
+        </div>
+        <div class="user-name">林晓彤</div>
+        <div class="user-bio">保持热爱，奔赴山海</div>
+    </div>
+
+    <div class="menu-list">
+        <!-- 第一个 xx配置：跳转新页面 -->
+        <div class="menu-item" id="jumpConfig1">
+            <div class="menu-left">
+                <span class="menu-icon">⚙️</span>
+                <span>账号配置</span>
+            </div>
+            <span class="arrow">➡️</span>
+        </div>
+
+        <!-- 第二个 xx配置：跳转新页面 (另一个配置) -->
+        <div class="menu-item" id="jumpConfig2">
+            <div class="menu-left">
+                <span class="menu-icon">🎨</span>
+                <span>主题配置</span>
+            </div>
+            <span class="arrow">➡️</span>
+        </div>
+
+        <!-- 关于信息：折叠面板 -->
+        <div class="collapse-wrapper">
+            <div class="collapse-header" id="collapseHeader">
+                <div class="collapse-title">
+                    <span class="collapse-icon">📄</span>
+                    <span>关于信息</span>
+                </div>
+                <span class="collapse-arrow" id="collapseArrow">▼</span>
+            </div>
+            <div class="collapse-content" id="collapseContent">
+                <div class="about-text">
+                    <strong>版本：</strong> 2.0.1<br>
+                    <strong>开发者：</strong> 响应式设计团队<br>
+                    <strong>功能介绍：</strong> 本界面同时适配PC和手机端，折叠面板使用纯JS实现，点击展开/收起关于应用的详细介绍。<br>
+                    <hr>
+                    📱 手机端：卡片占满宽度，触控区域加大<br>
+                    🖥️ PC端：居中卡片风格，支持悬浮效果<br>
+                    ✨ 背景图片覆盖全屏，头部头像组合清晰。
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastMsg" class="toast-msg">提示</div>
+
+<script>
+    (function() {
+        // ----- 跳转新页面功能（模拟真实跳转，演示可替换实际URL）-----
+        const config1 = document.getElementById('jumpConfig1');
+        const config2 = document.getElementById('jumpConfig2');
+
+        // 真实场景中改为你的目标页面地址
+        const PAGE_URL_1 = 'https://www.example.com/settings/account';   // 示例，不会真的跳转，因为example.com存在，但为了演示不跳恶意网站，弹出提示框演示
+        const PAGE_URL_2 = 'https://www.example.com/settings/theme';
+
+        function handleJump(url, name) {
+            // PC/手机通用的跳转方式：_blank 在新标签页打开（或者当前页）
+            // 由于示例链接无法保证访问，但展示行为，正式替换即可
+            if (url && url.startsWith('http')) {
+                window.open(url, '_blank');
+            } else {
+                // 本地测试提醒
+                showToast(`即将跳转至 ${name} 页面(正式链接可替换)`);
+                // 模拟: 延迟跳转展示效果（开发时可注释）
+                setTimeout(() => {
+                    // window.location.href = url;  生产环境打开
+                    console.log(`跳转: ${url}`);
+                }, 300);
+            }
+        }
+
+        config1.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleJump(PAGE_URL_1, '账号配置');
+        });
+
+        config2.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleJump(PAGE_URL_2, '主题配置');
+        });
+
+        // ----- 折叠面板（关于信息）-----
+        const collapseHeader = document.getElementById('collapseHeader');
+        const collapseContent = document.getElementById('collapseContent');
+        const collapseArrow = document.getElementById('collapseArrow');
+        let isOpen = false;   // 初始关闭
+
+        function toggleCollapse() {
+            if (isOpen) {
+                // 关闭
+                collapseContent.classList.remove('show');
+                collapseArrow.classList.remove('open');
+                // 可选: 平滑通过移除max-height
+            } else {
+                // 打开
+                collapseContent.classList.add('show');
+                collapseArrow.classList.add('open');
+            }
+            isOpen = !isOpen;
+        }
+
+        collapseHeader.addEventListener('click', toggleCollapse);
+        // 确保起始状态是关闭的（类已移除）
+        collapseContent.classList.remove('show');
+        collapseArrow.classList.remove('open');
+        isOpen = false;
+
+        // 小提示显示函数
+        function showToast(msg) {
+            const toast = document.getElementById('toastMsg');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 1800);
+        }
+
+        // 可选：如果是演示跳转示例URL友好提醒一下，因为当前example.com真实可访问但无实际意义
+        // 在PC端和手机端resize时无额外操作，但保留响应式设计
+        console.log('响应式个人中心已加载，支持PC/手机');
+    })();
+</script>
+</body>
+</html>
